@@ -375,7 +375,7 @@ impl ValidatorService {
             client_id_source: policy_config.map(|policy| policy.client_id_source),
             trusted_certificate_forwarders: trusted_certificate_forwarders
                 .iter()
-                .map(NetworkAuthorityClient::connect_lazy)
+                .map(|x| NetworkAuthorityClient::connect_lazy(x, None))
                 .collect(),
         }
     }
