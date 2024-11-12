@@ -1467,6 +1467,7 @@ impl SuiNode {
             TrafficControllerMetrics::new(prometheus_registry),
             config.policy_config.clone(),
             config.firewall_config.clone(),
+            config.trusted_certificate_forwarders.clone(),
         );
 
         let mut server_conf = mysten_network::config::Config::new();
