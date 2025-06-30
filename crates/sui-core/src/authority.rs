@@ -1950,6 +1950,7 @@ impl AuthorityState {
         let shift_violations = tracer.shift_violations();
         let mut trace_builder = Some(MoveTraceBuilder::new_with_tracer(Box::new(tracer)));
         let expensive_checks = false;
+        trace!("🔍 Executing transaction with shift violation tracer");
         let (inner_temp_store, _, effects, _timings, execution_error) = executor
             .execute_transaction_to_effects(
                 self.get_backing_store().as_ref(),
@@ -2020,6 +2021,8 @@ impl AuthorityState {
             let mut violations = shift_violations.lock().unwrap();
             mem::take(&mut *violations)
         };
+
+        trace!("🔍 Shift violations: {:?}", shift_violations);
 
         Ok((
             DryRunTransactionBlockResponse {
