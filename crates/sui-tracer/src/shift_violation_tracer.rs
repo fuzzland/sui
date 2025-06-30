@@ -38,7 +38,7 @@ struct InstructionInfo {
     pc: u16,
 }
 
-#[derive(Eq, PartialEq, Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Eq, PartialEq, Clone, Debug, Serialize, Deserialize, JsonSchema, Hash)]
 #[serde(rename_all = "camelCase")]
 pub struct ShiftViolation {
     pub instruction: String,
@@ -47,7 +47,7 @@ pub struct ShiftViolation {
     pub location: InstructionLocation,
 }
 
-#[derive(Eq, PartialEq, Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Eq, PartialEq, Clone, Debug, Serialize, Deserialize, JsonSchema, Hash)]
 #[serde(rename_all = "camelCase")]
 pub struct InstructionLocation {
     pub module: String,
@@ -100,7 +100,7 @@ impl ShiftViolationTracer {
     }
 
     fn handle_shl_instruction(&mut self) {
-        tracing::warn!(
+        tracing::trace!(
             "🔍 [handle_shl_instruction] operand_buffer: {:?}",
             self.operand_buffer
         );
@@ -159,7 +159,9 @@ impl ShiftViolationTracer {
             };
             warn!("Shift violation detected: {:?}", violation);
             if let Ok(mut violations) = self.shift_violations.lock() {
-                violations.push(violation);
+                if !violations.contains(&violation) {
+                    violations.push(violation);
+                }
             }
         }
 
@@ -170,7 +172,7 @@ impl ShiftViolationTracer {
 
 impl Tracer for ShiftViolationTracer {
     fn notify(&mut self, event: &TraceEvent, _writer: Writer<'_>) {
-        tracing::warn!("🔍 {:?}", event);
+        tracing::trace!("🔍  {:?}", event);
         match event {
             TraceEvent::OpenFrame { frame, .. } => {
                 // Update current frame info
