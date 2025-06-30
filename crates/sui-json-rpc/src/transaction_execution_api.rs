@@ -319,6 +319,7 @@ impl TransactionExecutionApi {
             input: resp.input,
             execution_error_source: resp.execution_error_source,
             suggested_gas_price: resp.suggested_gas_price,
+            shift_violations: resp.shift_violations,
         })
     }
 }
