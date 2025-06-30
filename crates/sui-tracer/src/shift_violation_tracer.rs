@@ -9,7 +9,7 @@ use move_trace_format::value::SerializableMoveValue;
 use move_vm_types::values::IntegerValue;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use tracing::{trace, warn};
+use tracing::warn;
 
 use crate::whitelist::WhitelistChecker;
 
@@ -100,7 +100,7 @@ impl ShiftViolationTracer {
     }
 
     fn handle_shl_instruction(&mut self) {
-        trace!(
+        tracing::warn!(
             "🔍 [handle_shl_instruction] operand_buffer: {:?}",
             self.operand_buffer
         );
@@ -170,7 +170,7 @@ impl ShiftViolationTracer {
 
 impl Tracer for ShiftViolationTracer {
     fn notify(&mut self, event: &TraceEvent, _writer: Writer<'_>) {
-        trace!("🔍 {:?}", event);
+        tracing::warn!("🔍 {:?}", event);
         match event {
             TraceEvent::OpenFrame { frame, .. } => {
                 // Update current frame info
