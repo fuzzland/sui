@@ -1829,6 +1829,7 @@ impl AuthorityState {
         TransactionEffects,
         Option<ObjectID>,
     )> {
+        trace!("🔍 dry_exec_transaction");
         let epoch_store = self.load_epoch_store_one_call_per_task();
         if !self.is_fullnode(&epoch_store) {
             return Err(SuiError::UnsupportedFeatureError {
@@ -1872,6 +1873,7 @@ impl AuthorityState {
         TransactionEffects,
         Option<ObjectID>,
     )> {
+        trace!("🔍 dry_exec_transaction_impl");
         // Cheap validity checks for a transaction, including input size limits.
         transaction.validity_check_no_gas_check(epoch_store.protocol_config())?;
 
