@@ -49,7 +49,7 @@ storybook-static/
 web-ext-artifacts/
 .next/
 next-env.d.ts
-
+CLAUDE.md
 # App test artifacts
 coverage/
 test-results/
