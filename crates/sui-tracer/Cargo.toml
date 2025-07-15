@@ -1,0 +1,18 @@
+[package]
+name = "sui-tracer"
+version = "0.1.0"
+publish = false
+edition = "2021"
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow = { workspace = true, features = ["backtrace"] }
+move-vm-types = { path = "../../external-crates/move/crates/move-vm-types" }
+move-trace-format.workspace = true
+move-binary-format.workspace = true
+move-core-types.workspace = true
+tracing.workspace = true
+serde.workspace = true
+schemars.workspace = true
