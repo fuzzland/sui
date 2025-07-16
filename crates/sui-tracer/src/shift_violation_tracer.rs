@@ -213,6 +213,7 @@ impl Tracer for ShiftViolationTracer {
                                     // Check if we have collected all operands
                                     if self.operand_buffer.len() == 2 {
                                         self.handle_shl_instruction();
+                                        self.current_instruction = None; // Reset after handling
                                     }
                                 }
                             }
