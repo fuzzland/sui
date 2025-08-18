@@ -2153,7 +2153,7 @@ impl AuthorityState {
         TransactionEffects,
         Option<ObjectID>,
     )> {
-        tracing::trace!("🔍  dry_exec_transaction_impl");
+        tracing::trace!("🔍  dry_exec_transaction_override_impl");
         // Cheap validity checks for a transaction, including input size limits.
         transaction.validity_check_no_gas_check(epoch_store.protocol_config())?;
 
