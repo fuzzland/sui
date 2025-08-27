@@ -113,6 +113,20 @@ pub trait StateRead: Send + Sync {
         Option<ObjectID>,
     )>;
 
+    // transaction_execution_api
+    #[allow(clippy::type_complexity)]
+    async fn dry_exec_transaction_override(
+        &self,
+        transaction: TransactionData,
+        transaction_digest: TransactionDigest,
+        override_objects: Vec<(ObjectID, Object)>,
+    ) -> StateReadResult<(
+        DryRunTransactionBlockResponse,
+        BTreeMap<ObjectID, (ObjectRef, Object, WriteKind)>,
+        TransactionEffects,
+        Option<ObjectID>,
+    )>;
+
     async fn dev_inspect_transaction_block(
         &self,
         sender: SuiAddress,
@@ -323,6 +337,23 @@ impl StateRead for AuthorityState {
     )> {
         Ok(self
             .dry_exec_transaction(transaction, transaction_digest)
+            .await?)
+    }
+
+    #[allow(clippy::type_complexity)]
+    async fn dry_exec_transaction_override(
+        &self,
+        transaction: TransactionData,
+        transaction_digest: TransactionDigest,
+        override_objects: Vec<(ObjectID, Object)>,
+    ) -> StateReadResult<(
+        DryRunTransactionBlockResponse,
+        BTreeMap<ObjectID, (ObjectRef, Object, WriteKind)>,
+        TransactionEffects,
+        Option<ObjectID>,
+    )> {
+        Ok(self
+            .dry_exec_transaction_override(transaction, transaction_digest, override_objects)
             .await?)
     }
 

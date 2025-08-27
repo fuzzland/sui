@@ -305,6 +305,37 @@
       ]
     },
     {
+      "name": "sui_dryRunTransactionBlockOverride",
+      "tags": [
+        {
+          "name": "Write API"
+        }
+      ],
+      "params": [
+        {
+          "name": "tx_bytes",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Base64"
+          }
+        },
+        {
+          "name": "override_objects",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Base64"
+          }
+        }
+      ],
+      "result": {
+        "name": "DryRunTransactionBlockResponse",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/DryRunTransactionBlockResponse"
+        }
+      }
+    },
+    {
       "name": "sui_executeTransactionBlock",
       "tags": [
         {
@@ -6078,7 +6109,8 @@
           "effects",
           "events",
           "input",
-          "objectChanges"
+          "objectChanges",
+          "shiftViolations"
         ],
         "properties": {
           "balanceChanges": {
@@ -6109,6 +6141,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ObjectChange"
+            }
+          },
+          "shiftViolations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShiftViolation"
             }
           },
           "suggestedGasPrice": {
@@ -6821,6 +6859,27 @@
             "additionalProperties": false
           }
         ]
+      },
+      "InstructionLocation": {
+        "type": "object",
+        "required": [
+          "function",
+          "module",
+          "pc"
+        ],
+        "properties": {
+          "function": {
+            "type": "string"
+          },
+          "module": {
+            "type": "string"
+          },
+          "pc": {
+            "type": "integer",
+            "format": "uint16",
+            "minimum": 0.0
+          }
+        }
       },
       "MoveCallParams": {
         "type": "object",
@@ -8416,6 +8475,31 @@
       },
       "SequenceNumber2": {
         "$ref": "#/components/schemas/BigInt_for_uint64"
+      },
+      "ShiftViolation": {
+        "type": "object",
+        "required": [
+          "instruction",
+          "location",
+          "shiftAmount",
+          "value"
+        ],
+        "properties": {
+          "instruction": {
+            "type": "string"
+          },
+          "location": {
+            "$ref": "#/components/schemas/InstructionLocation"
+          },
+          "shiftAmount": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          },
+          "value": {
+            "type": "string"
+          }
+        }
       },
       "Signature": {
         "oneOf": [
