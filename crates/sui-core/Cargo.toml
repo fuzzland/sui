@@ -95,6 +95,9 @@ sui-storage.workspace = true
 sui-tls.workspace = true
 sui-types.workspace = true
 nonempty.workspace = true
+sui-tracer.workspace = true
+move-trace-format.workspace = true
+
 
 [dev-dependencies]
 sui-move-build.workspace = true
