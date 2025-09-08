@@ -15,7 +15,7 @@ pub use verifier::Verifier;
 pub mod executor;
 pub mod verifier;
 
-mod latest;
+pub mod latest;
 mod v0;
 mod v1;
 mod v2;
