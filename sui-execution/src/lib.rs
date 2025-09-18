@@ -14,10 +14,10 @@ pub use verifier::Verifier;
 pub mod executor;
 pub mod verifier;
 
-mod latest;
-mod v0;
-mod v1;
-mod v2;
+pub mod latest;
+pub mod v0;
+pub mod v1;
+pub mod v2;
 
 #[cfg(test)]
 mod tests;
