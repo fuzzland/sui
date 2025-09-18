@@ -4,7 +4,7 @@
 pub use checked::*;
 
 #[sui_macros::with_checked_arithmetic]
-mod checked {
+pub mod checked {
 
     use crate::execution_mode::{self, ExecutionMode};
     use crate::execution_value::SuiResolver;

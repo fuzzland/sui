@@ -37,6 +37,7 @@ use sui_types::base_types::{ObjectID, SequenceNumber, SuiAddress, TransactionDig
 use sui_types::dynamic_field::DynamicFieldName;
 use sui_types::event::EventID;
 use sui_types::messages_checkpoint::CheckpointSequenceNumber;
+use sui_types::object::Object;
 use sui_types::quorum_driver_types::ExecuteTransactionRequestType;
 use sui_types::sui_serde::BigInt;
 use sui_types::sui_system_state::sui_system_state_summary::SuiSystemStateSummary;
@@ -645,6 +646,21 @@ impl ReadApi {
             .api
             .http
             .dry_run_transaction_block(Base64::from_bytes(&bcs::to_bytes(&tx)?))
+            .await?)
+    }
+
+    pub async fn dry_run_transaction_block_override(
+        &self,
+        tx: TransactionData,
+        override_objects: Vec<(ObjectID, Object)>,
+    ) -> SuiRpcResult<DryRunTransactionBlockResponse> {
+        Ok(self
+            .api
+            .http
+            .dry_run_transaction_block_override(
+                Base64::from_bytes(&bcs::to_bytes(&tx)?),
+                Base64::from_bytes(&bcs::to_bytes(&override_objects)?),
+            )
             .await?)
     }
 

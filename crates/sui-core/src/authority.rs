@@ -11,6 +11,8 @@ use crate::execution_cache::TransactionCacheRead;
 use crate::execution_scheduler::ExecutionScheduler;
 use crate::execution_scheduler::SchedulingSource;
 use crate::jsonrpc_index::CoinIndexKey2;
+use crate::override_cache::InputLoaderCache;
+use crate::override_cache::ObjectCache;
 use crate::rpc_index::RpcIndexStore;
 use crate::traffic_controller::metrics::TrafficControllerMetrics;
 use crate::traffic_controller::TrafficController;
@@ -2139,6 +2141,41 @@ impl AuthorityState {
         self.dry_exec_transaction_impl(&epoch_store, transaction, transaction_digest)
     }
 
+    #[instrument(skip_all)]
+    #[allow(clippy::type_complexity)]
+    pub async fn dry_exec_transaction_override(
+        &self,
+        transaction: TransactionData,
+        transaction_digest: TransactionDigest,
+        override_objects: Vec<(ObjectID, Object)>,
+    ) -> SuiResult<(
+        DryRunTransactionBlockResponse,
+        BTreeMap<ObjectID, (ObjectRef, Object, WriteKind)>,
+        TransactionEffects,
+        Option<ObjectID>,
+    )> {
+        tracing::trace!("🔍  dry_exec_transaction_override");
+        let epoch_store = self.load_epoch_store_one_call_per_task();
+        if !self.is_fullnode(&epoch_store) {
+            return Err(SuiError::UnsupportedFeatureError {
+                error: "dry-exec is only supported on fullnodes".to_string(),
+            });
+        }
+
+        if transaction.kind().is_system_tx() {
+            return Err(SuiError::UnsupportedFeatureError {
+                error: "dry-exec does not support system transactions".to_string(),
+            });
+        }
+
+        self.dry_exec_transaction_override_impl(
+            &epoch_store,
+            transaction,
+            transaction_digest,
+            override_objects,
+        )
+    }
+
     #[allow(clippy::type_complexity)]
     pub fn dry_exec_transaction_for_benchmark(
         &self,
@@ -2333,6 +2370,202 @@ impl AuthorityState {
                         e
                     ),
                 })?, // TODO: replace the underlying try_from to SuiError. This one goes deep
+                effects: effects.clone().try_into()?,
+                events: SuiTransactionBlockEvents::try_from(
+                    inner_temp_store.events.clone(),
+                    tx_digest,
+                    None,
+                    layout_resolver.as_mut(),
+                )?,
+                object_changes,
+                balance_changes,
+                execution_error_source,
+            },
+            written_with_kind,
+            effects,
+            mock_gas,
+        ))
+    }
+
+    #[allow(clippy::type_complexity)]
+    fn dry_exec_transaction_override_impl(
+        &self,
+        epoch_store: &AuthorityPerEpochStore,
+        transaction: TransactionData,
+        transaction_digest: TransactionDigest,
+        override_objects: Vec<(ObjectID, Object)>,
+    ) -> SuiResult<(
+        DryRunTransactionBlockResponse,
+        BTreeMap<ObjectID, (ObjectRef, Object, WriteKind)>,
+        TransactionEffects,
+        Option<ObjectID>,
+    )> {
+        tracing::trace!("🔍  dry_exec_transaction_impl");
+        transaction.validity_check_no_gas_check(epoch_store.protocol_config())?;
+
+        let input_object_kinds = transaction.input_objects()?;
+        let receiving_object_refs = transaction.receiving_objects();
+
+        sui_transaction_checks::deny::check_transaction_for_signing(
+            &transaction,
+            &[],
+            &input_object_kinds,
+            &receiving_object_refs,
+            &self.config.transaction_deny_config,
+            self.get_backing_package_store().as_ref(),
+        )?;
+
+        let cached_input_loader = InputLoaderCache {
+            loader: &self.input_loader,
+            cache: override_objects.clone(),
+        };
+
+        let (input_objects, receiving_objects) = cached_input_loader.read_objects_for_signing(
+            None,
+            &input_object_kinds,
+            &receiving_object_refs,
+            epoch_store.epoch(),
+        )?;
+
+        let mut gas_data = transaction.gas_data().clone();
+        let ((gas_status, checked_input_objects), mock_gas) = if transaction.gas().is_empty() {
+            let sender = transaction.sender();
+            const MIST_TO_SUI: u64 = 1_000_000_000;
+            const DRY_RUN_SUI: u64 = 1_000_000_000;
+            let max_coin_value = MIST_TO_SUI * DRY_RUN_SUI;
+            let gas_object_id = ObjectID::random();
+            let gas_object = Object::new_move(
+                MoveObject::new_gas_coin(OBJECT_START_VERSION, gas_object_id, max_coin_value),
+                Owner::AddressOwner(sender),
+                TransactionDigest::genesis_marker(),
+            );
+            let gas_object_ref = gas_object.compute_object_reference();
+            gas_data.payment = vec![gas_object_ref];
+            (
+                sui_transaction_checks::check_transaction_input_with_given_gas(
+                    epoch_store.protocol_config(),
+                    epoch_store.reference_gas_price(),
+                    &transaction,
+                    input_objects,
+                    receiving_objects,
+                    gas_object,
+                    &self.metrics.bytecode_verifier_metrics,
+                    &self.config.verifier_signing_config,
+                )?,
+                Some(gas_object_id),
+            )
+        } else {
+            (
+                sui_transaction_checks::check_transaction_input(
+                    epoch_store.protocol_config(),
+                    epoch_store.reference_gas_price(),
+                    &transaction,
+                    input_objects,
+                    &receiving_objects,
+                    &self.metrics.bytecode_verifier_metrics,
+                    &self.config.verifier_signing_config,
+                )?,
+                None,
+            )
+        };
+
+        let protocol_config = epoch_store.protocol_config();
+        let (kind, signer, _) = transaction.execution_parts();
+
+        let silent = true;
+        let executor = sui_execution::executor(protocol_config, silent)
+            .expect("Creating an executor should not fail here");
+
+        let expensive_checks = false;
+        let object_cache = ObjectCache::new(Arc::clone(self.get_backing_store()), override_objects);
+
+        let early_execution_error = get_early_execution_error(
+            &transaction_digest,
+            &checked_input_objects,
+            self.config.certificate_deny_config.certificate_deny_set(),
+            &BalanceWithdrawStatus::NoWithdraw,
+        );
+        let execution_params = match early_execution_error {
+            Some(error) => ExecutionOrEarlyError::Err(error),
+            None => ExecutionOrEarlyError::Ok(()),
+        };
+        let (inner_temp_store, _, effects, _timings, execution_error) = executor
+            .execute_transaction_to_effects(
+                &object_cache,
+                protocol_config,
+                self.metrics.limits_metrics.clone(),
+                expensive_checks,
+                execution_params,
+                &epoch_store.epoch_start_config().epoch_data().epoch_id(),
+                epoch_store
+                    .epoch_start_config()
+                    .epoch_data()
+                    .epoch_start_timestamp(),
+                checked_input_objects,
+                gas_data,
+                gas_status,
+                kind,
+                signer,
+                transaction_digest,
+                &mut None,
+            );
+        let tx_digest = *effects.transaction_digest();
+
+        let module_cache =
+            TemporaryModuleResolver::new(&inner_temp_store, epoch_store.module_cache().clone());
+
+        let mut layout_resolver =
+            epoch_store
+                .executor()
+                .type_layout_resolver(Box::new(PackageStoreWithFallback::new(
+                    &inner_temp_store,
+                    self.get_backing_package_store(),
+                )));
+        let object_changes = Vec::new();
+        let balance_changes = Vec::new();
+
+        let written_with_kind = effects
+            .created()
+            .into_iter()
+            .map(|(oref, _)| (oref, WriteKind::Create))
+            .chain(
+                effects
+                    .unwrapped()
+                    .into_iter()
+                    .map(|(oref, _)| (oref, WriteKind::Unwrap)),
+            )
+            .chain(
+                effects
+                    .mutated()
+                    .into_iter()
+                    .map(|(oref, _)| (oref, WriteKind::Mutate)),
+            )
+            .map(|(oref, kind)| {
+                let obj = inner_temp_store.written.get(&oref.0).unwrap();
+                (oref.0, (oref, obj.clone(), kind))
+            })
+            .collect();
+
+        let execution_error_source = execution_error
+            .as_ref()
+            .err()
+            .and_then(|e| e.source().as_ref().map(|e| e.to_string()));
+
+        Ok((
+            DryRunTransactionBlockResponse {
+                suggested_gas_price: self
+                    .congestion_tracker
+                    .get_suggested_gas_prices(&transaction),
+                input: SuiTransactionBlockData::try_from_with_module_cache(
+                    transaction,
+                    &module_cache,
+                )
+                .map_err(|e| SuiError::TransactionSerializationError {
+                    error: format!(
+                        "Failed to convert transaction to SuiTransactionBlockData: {}",
+                        e
+                    ),
+                })?,
                 effects: effects.clone().try_into()?,
                 events: SuiTransactionBlockEvents::try_from(
                     inner_temp_store.events.clone(),

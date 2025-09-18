@@ -38,15 +38,15 @@ use crate::executor;
 use crate::verifier;
 use sui_adapter_latest::execution_mode;
 
-pub(crate) struct Executor(Arc<MoveVM>);
+pub struct Executor(Arc<MoveVM>);
 
-pub(crate) struct Verifier<'m> {
+pub struct Verifier<'m> {
     config: VerifierConfig,
     metrics: &'m Arc<BytecodeVerifierMetrics>,
 }
 
 impl Executor {
-    pub(crate) fn new(protocol_config: &ProtocolConfig, silent: bool) -> Result<Self, SuiError> {
+    pub fn new(protocol_config: &ProtocolConfig, silent: bool) -> Result<Self, SuiError> {
         Ok(Executor(Arc::new(new_move_vm(
             all_natives(silent, protocol_config),
             protocol_config,
@@ -55,7 +55,7 @@ impl Executor {
 }
 
 impl<'m> Verifier<'m> {
-    pub(crate) fn new(config: VerifierConfig, metrics: &'m Arc<BytecodeVerifierMetrics>) -> Self {
+    pub fn new(config: VerifierConfig, metrics: &'m Arc<BytecodeVerifierMetrics>) -> Self {
         Verifier { config, metrics }
     }
 }
