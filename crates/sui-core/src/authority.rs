@@ -27,6 +27,7 @@ use move_binary_format::binary_config::BinaryConfig;
 use move_binary_format::CompiledModule;
 use move_core_types::annotated_value::MoveStructLayout;
 use move_core_types::language_storage::ModuleId;
+use move_trace_format::format::MoveTraceBuilder;
 use mysten_common::fatal;
 use mysten_metrics::{TX_TYPE_SHARED_OBJ_TX, TX_TYPE_SINGLE_WRITER_TX};
 use parking_lot::Mutex;
@@ -43,6 +44,7 @@ use shared_object_version_manager::Schedulable;
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::Write;
+use std::mem;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 use std::time::Duration;
@@ -60,6 +62,7 @@ use std::{
 use sui_config::node::{AuthorityOverloadConfig, StateDebugDumpConfig};
 use sui_config::NodeConfig;
 use sui_protocol_config::PerObjectCongestionControlMode;
+use sui_tracer::shift_violation_tracer::ShiftViolationTracer;
 use sui_types::crypto::RandomnessRound;
 use sui_types::dynamic_field::visitor as DFV;
 use sui_types::execution::ExecutionTimeObservationKey;
@@ -2240,6 +2243,10 @@ impl AuthorityState {
         let executor = sui_execution::executor(protocol_config, silent)
             .expect("Creating an executor should not fail here");
 
+        let tracer = ShiftViolationTracer::new();
+        let shift_violations = tracer.shift_violations();
+        let mut trace_builder = Some(MoveTraceBuilder::new_with_tracer(Box::new(tracer)));
+
         let expensive_checks = false;
         let early_execution_error = get_early_execution_error(
             &transaction_digest,
@@ -2270,7 +2277,7 @@ impl AuthorityState {
                 kind,
                 signer,
                 transaction_digest,
-                &mut None,
+                &mut trace_builder,
             );
         let tx_digest = *effects.transaction_digest();
 
@@ -2318,6 +2325,11 @@ impl AuthorityState {
             .err()
             .and_then(|e| e.source().as_ref().map(|e| e.to_string()));
 
+        let shift_violations = {
+            let mut violations = shift_violations.lock().unwrap();
+            mem::take(&mut *violations)
+        };
+
         Ok((
             DryRunTransactionBlockResponse {
                 suggested_gas_price: self
@@ -2343,6 +2355,7 @@ impl AuthorityState {
                 object_changes,
                 balance_changes,
                 execution_error_source,
+                shift_violations,
             },
             written_with_kind,
             effects,
