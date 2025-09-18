@@ -305,6 +305,37 @@
       ]
     },
     {
+      "name": "sui_dryRunTransactionBlockOverride",
+      "tags": [
+        {
+          "name": "Write API"
+        }
+      ],
+      "params": [
+        {
+          "name": "tx_bytes",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Base64"
+          }
+        },
+        {
+          "name": "override_objects",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Base64"
+          }
+        }
+      ],
+      "result": {
+        "name": "DryRunTransactionBlockResponse",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/DryRunTransactionBlockResponse"
+        }
+      }
+    },
+    {
       "name": "sui_executeTransactionBlock",
       "tags": [
         {
