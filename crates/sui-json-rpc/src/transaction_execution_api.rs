@@ -286,6 +286,7 @@ impl TransactionExecutionApi {
         &self,
         tx_bytes: Base64,
     ) -> Result<DryRunTransactionBlockResponse, Error> {
+        tracing::trace!("🔍  dry_run_transaction_block");
         let (txn_data, txn_digest, input_objs) =
             self.prepare_dry_run_transaction_block(tx_bytes)?;
         let sender = txn_data.sender();

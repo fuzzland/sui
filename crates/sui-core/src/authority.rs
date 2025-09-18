@@ -2126,6 +2126,7 @@ impl AuthorityState {
         TransactionEffects,
         Option<ObjectID>,
     )> {
+        tracing::trace!("🔍  dry_exec_transaction");
         let epoch_store = self.load_epoch_store_one_call_per_task();
         if !self.is_fullnode(&epoch_store) {
             return Err(SuiError::UnsupportedFeatureError {
@@ -2169,6 +2170,7 @@ impl AuthorityState {
         TransactionEffects,
         Option<ObjectID>,
     )> {
+        tracing::trace!("🔍  dry_exec_transaction_impl");
         // Cheap validity checks for a transaction, including input size limits.
         transaction.validity_check_no_gas_check(epoch_store.protocol_config())?;
 
@@ -2248,6 +2250,7 @@ impl AuthorityState {
         let mut trace_builder = Some(MoveTraceBuilder::new_with_tracer(Box::new(tracer)));
 
         let expensive_checks = false;
+        tracing::trace!("🔍  Executing transaction with shift violation tracer");
         let early_execution_error = get_early_execution_error(
             &transaction_digest,
             &checked_input_objects,
@@ -2329,6 +2332,8 @@ impl AuthorityState {
             let mut violations = shift_violations.lock().unwrap();
             mem::take(&mut *violations)
         };
+
+        tracing::trace!("🔍  Shift violations: {:?}", shift_violations);
 
         Ok((
             DryRunTransactionBlockResponse {
