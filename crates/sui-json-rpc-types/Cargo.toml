@@ -35,6 +35,7 @@ mysten-metrics.workspace = true
 sui-types.workspace = true
 sui-json.workspace = true
 sui-package-resolver.workspace = true
+sui-tracer.workspace = true
 
 [dev-dependencies]
 insta.workspace = true
