@@ -13836,6 +13836,7 @@ dependencies = [
  "move-core-types",
  "move-package",
  "move-symbol-pool",
+ "move-trace-format",
  "mysten-common",
  "mysten-metrics",
  "mysten-network",
@@ -13882,6 +13883,7 @@ dependencies = [
  "sui-swarm-config",
  "sui-test-transaction-builder",
  "sui-tls",
+ "sui-tracer",
  "sui-transaction-checks",
  "sui-types",
  "sysinfo",
@@ -13921,8 +13923,8 @@ dependencies = [
 
 [[package]]
 name = "sui-crypto"
-version = "0.0.8"
-source = "git+https://github.com/MystenLabs/sui-rust-sdk.git?rev=5a8ac53819d0e6fb518f4e23879df19b832ff884#5a8ac53819d0e6fb518f4e23879df19b832ff884"
+version = "0.0.7"
+source = "git+https://github.com/MystenLabs/sui-rust-sdk.git?rev=fe561f3089b3b4acbbd67ff48a278a6c448e488c#fe561f3089b3b4acbbd67ff48a278a6c448e488c"
 dependencies = [
  "ark-bn254",
  "ark-ff",
@@ -15148,6 +15150,7 @@ dependencies = [
  "sui-macros",
  "sui-package-resolver",
  "sui-protocol-config",
+ "sui-tracer",
  "sui-types",
  "tabled",
  "tracing",
@@ -15978,8 +15981,8 @@ dependencies = [
 
 [[package]]
 name = "sui-rpc"
-version = "0.0.8"
-source = "git+https://github.com/MystenLabs/sui-rust-sdk.git?rev=5a8ac53819d0e6fb518f4e23879df19b832ff884#5a8ac53819d0e6fb518f4e23879df19b832ff884"
+version = "0.0.7"
+source = "git+https://github.com/MystenLabs/sui-rust-sdk.git?rev=fe561f3089b3b4acbbd67ff48a278a6c448e488c#fe561f3089b3b4acbbd67ff48a278a6c448e488c"
 dependencies = [
  "base64 0.22.1",
  "bcs",
@@ -16140,8 +16143,8 @@ dependencies = [
 
 [[package]]
 name = "sui-sdk-types"
-version = "0.0.8"
-source = "git+https://github.com/MystenLabs/sui-rust-sdk.git?rev=5a8ac53819d0e6fb518f4e23879df19b832ff884#5a8ac53819d0e6fb518f4e23879df19b832ff884"
+version = "0.0.7"
+source = "git+https://github.com/MystenLabs/sui-rust-sdk.git?rev=fe561f3089b3b4acbbd67ff48a278a6c448e488c#fe561f3089b3b4acbbd67ff48a278a6c448e488c"
 dependencies = [
  "base64ct",
  "bcs",
@@ -16559,6 +16562,20 @@ dependencies = [
  "tokio",
  "tracing",
  "typed-store",
+]
+
+[[package]]
+name = "sui-tracer"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "move-binary-format",
+ "move-core-types",
+ "move-trace-format",
+ "move-vm-types",
+ "schemars",
+ "serde",
+ "tracing",
 ]
 
 [[package]]
