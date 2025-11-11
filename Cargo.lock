@@ -14124,6 +14124,7 @@ dependencies = [
  "move-bytecode-utils",
  "move-core-types",
  "move-symbol-pool",
+ "move-trace-format",
  "mysten-common",
  "mysten-metrics",
  "mysten-network",
@@ -14170,6 +14171,7 @@ dependencies = [
  "sui-swarm-config",
  "sui-test-transaction-builder",
  "sui-tls",
+ "sui-tracer",
  "sui-transaction-checks",
  "sui-types",
  "sysinfo",
@@ -15483,6 +15485,7 @@ dependencies = [
  "sui-macros",
  "sui-package-resolver",
  "sui-protocol-config",
+ "sui-tracer",
  "sui-types",
  "tabled",
  "tracing",
@@ -16957,6 +16960,20 @@ dependencies = [
  "tokio",
  "tracing",
  "typed-store",
+]
+
+[[package]]
+name = "sui-tracer"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "move-binary-format",
+ "move-core-types",
+ "move-trace-format",
+ "move-vm-types",
+ "schemars 0.8.21",
+ "serde",
+ "tracing",
 ]
 
 [[package]]
